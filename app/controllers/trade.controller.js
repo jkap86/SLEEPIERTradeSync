@@ -160,9 +160,9 @@ exports.trades = async (app) => {
                     }
                 }
             })
-            */
 
             console.log(`${trades_deleted} Trades deleted...`)
+            */
         } catch (error) {
             console.log(error)
         }
