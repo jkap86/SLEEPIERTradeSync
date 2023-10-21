@@ -51,7 +51,7 @@ exports.trades = async (app) => {
                     let transactions_league = await axios.get(`https://api.sleeper.app/v1/league/${league.league_id}/transactions/${state.season_type === 'regular' ? state.week : 1}`);
 
                     transactions_league.data
-                        .filter(t => t.type === 'trade' && t.status_updated > new Date().getTime() - 30 * 24 * 60 * 60 * 1000)
+                        .filter(t => t.type === 'trade')
                         .map(transaction => {
                             const draft_order = league.drafts.find(d => d.draft_order && d.status !== 'complete')?.draft_order
 
@@ -151,6 +151,8 @@ exports.trades = async (app) => {
         try {
             await Trade.bulkCreate(trades_league, { ignoreDuplicates: true })
             await db.sequelize.model('userTrades').bulkCreate(trades_users, { ignoreDuplicates: true })
+
+            /*
             const trades_deleted = await Trade.destroy({
                 where: {
                     status_updated: {
@@ -158,6 +160,8 @@ exports.trades = async (app) => {
                     }
                 }
             })
+            */
+
             console.log(`${trades_deleted} Trades deleted...`)
         } catch (error) {
             console.log(error)
