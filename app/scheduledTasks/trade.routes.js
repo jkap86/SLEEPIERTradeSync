@@ -16,5 +16,8 @@ module.exports = app => {
         }
     }, 60 * 1000)
 
+    setTimeout(async () => {
+        await trade.season_trades(app)
+    }, 5000)
 
 }
