@@ -9,7 +9,7 @@ const axios = require('../api/axiosInstance');
 const updateTrades = async (app, season, week) => {
     const state = app.get('state')
     let i = app.get('trades_sync_counter')
-    const increment = 250
+    const increment = 100
 
     let leagues_to_update;
     try {
@@ -45,97 +45,121 @@ const updateTrades = async (app, season, week) => {
         await Promise.all(leagues_to_update.filter(l => l.rosters.find(r => r?.players?.length > 0)).slice(j, j + 25).map(async league => {
 
             try {
-                let transactions_league = await axios.get(`https://api.sleeper.app/v1/league/${league.league_id}/transactions/${week_to_fetch}`);
+                const updateTradesWeek = async (week_to_fetch) => {
+                    let transactions_league = await axios.get(`https://api.sleeper.app/v1/league/${league.league_id}/transactions/${week_to_fetch}`);
 
-                transactions_league.data
-                    .filter(t => t.type === 'trade')
-                    .map(transaction => {
-                        const draft_order = league.drafts.find(d => d.draft_order && d.status !== 'complete')?.draft_order
+                    transactions_league.data
+                        .filter(t => t.type === 'trade')
+                        .map(transaction => {
+                            const draft_order = league.drafts.find(d => d.draft_order && d.status !== 'complete')?.draft_order
 
-                        const managers = transaction.roster_ids.map(roster_id => {
-                            const user = league.rosters?.find(x => x.roster_id === roster_id)
+                            const managers = transaction.roster_ids.map(roster_id => {
+                                const user = league.rosters?.find(x => x.roster_id === roster_id)
 
-                            return user?.user_id
-                        })
+                                return user?.user_id
+                            })
 
-                        const draft_picks = transaction.draft_picks.map(pick => {
-                            const roster = league.rosters.find(x => x.roster_id === pick.roster_id)
-                            const new_roster = league.rosters.find(x => x.roster_id === pick.owner_id)
-                            const old_roster = league.rosters.find(x => x.roster_id === pick.previous_owner_id)
+                            const draft_picks = transaction.draft_picks.map(pick => {
+                                const roster = league.rosters.find(x => x.roster_id === pick.roster_id)
+                                const new_roster = league.rosters.find(x => x.roster_id === pick.owner_id)
+                                const old_roster = league.rosters.find(x => x.roster_id === pick.previous_owner_id)
 
-                            return {
-                                ...pick,
-                                original_user: {
-                                    user_id: roster?.user_id,
-                                    username: roster?.username,
-                                    avatar: roster?.avatar,
-                                },
-                                new_user: {
-                                    user_id: new_roster?.user_id,
-                                    username: new_roster?.username,
-                                    avatar: new_roster?.avatar,
-                                },
-                                old_user: {
-                                    user_id: old_roster?.user_id,
-                                    username: old_roster?.username,
-                                    avatar: old_roster?.avatar,
-                                },
-                                order: draft_order && roster?.user_id && pick.season === season ? draft_order[roster?.user_id] : null
-                            }
-                        })
-
-                        let adds = {}
-                        transaction.adds && Object.keys(transaction.adds).map(add => {
-                            const user = league.rosters?.find(x => x.roster_id === transaction.adds[add])
-                            return adds[add] = user?.user_id
-                        })
-
-                        let drops = {}
-                        transaction.drops && Object.keys(transaction.drops).map(drop => {
-                            const user = league.rosters?.find(x => x.roster_id === transaction.drops[drop])
-                            return drops[drop] = user?.user_id
-                        })
-
-                        const pricecheck = []
-                        managers.map(user_id => {
-                            const count = Object.keys(adds).filter(a => adds[a] === user_id).length
-                                + draft_picks.filter(pick => pick.new_user.user_id === user_id).length
-
-                            if (count === 1) {
-                                const player = Object.keys(adds).find(a => adds[a] === user_id)
-                                if (player) {
-                                    pricecheck.push(player)
-                                } else {
-                                    const pick = draft_picks.find(pick => pick.new_user.user_id === user_id)
-                                    pricecheck.push(`${pick.season} ${pick.round}.${pick.order}`)
+                                return {
+                                    ...pick,
+                                    original_user: {
+                                        user_id: roster?.user_id,
+                                        username: roster?.username,
+                                        avatar: roster?.avatar,
+                                    },
+                                    new_user: {
+                                        user_id: new_roster?.user_id,
+                                        username: new_roster?.username,
+                                        avatar: new_roster?.avatar,
+                                    },
+                                    old_user: {
+                                        user_id: old_roster?.user_id,
+                                        username: old_roster?.username,
+                                        avatar: old_roster?.avatar,
+                                    },
+                                    order: draft_order && roster?.user_id && pick.season === season ? draft_order[roster?.user_id] : null
                                 }
-                            }
+                            })
+
+                            let adds = {}
+                            transaction.adds && Object.keys(transaction.adds).map(add => {
+                                const user = league.rosters?.find(x => x.roster_id === transaction.adds[add])
+                                return adds[add] = user?.user_id
+                            })
+
+                            let drops = {}
+                            transaction.drops && Object.keys(transaction.drops).map(drop => {
+                                const user = league.rosters?.find(x => x.roster_id === transaction.drops[drop])
+                                return drops[drop] = user?.user_id
+                            })
+
+                            const pricecheck = []
+                            managers.map(user_id => {
+                                const count = Object.keys(adds).filter(a => adds[a] === user_id).length
+                                    + draft_picks.filter(pick => pick.new_user.user_id === user_id).length
+
+                                if (count === 1) {
+                                    const player = Object.keys(adds).find(a => adds[a] === user_id)
+                                    if (player) {
+                                        pricecheck.push(player)
+                                    } else {
+                                        const pick = draft_picks.find(pick => pick.new_user.user_id === user_id)
+                                        pricecheck.push(`${pick.season} ${pick.round}.${pick.order}`)
+                                    }
+                                }
+                            })
+
+
+
+                            trades_users.push(...managers.filter(m => parseInt(m) > 0).map(m => {
+                                return {
+                                    userUserId: m,
+                                    tradeTransactionId: transaction.transaction_id
+                                }
+                            }))
+                            trades_league.push({
+                                transaction_id: transaction.transaction_id,
+                                leagueLeagueId: league.league_id,
+                                status_updated: transaction.status_updated,
+                                rosters: league.rosters,
+                                managers: managers,
+                                players: [...Object.keys(adds), ...draft_picks.map(pick => `${pick.season} ${pick.round}.${pick.order}`)],
+                                adds: adds,
+                                drops: drops,
+                                draft_picks: draft_picks,
+                                drafts: league.drafts,
+                                price_check: pricecheck
+                            })
+
+
                         })
 
+                    const oldest = Math.min(...transactions_league.data.map(trade => trade.status_updated), 0)
 
 
-                        trades_users.push(...managers.filter(m => parseInt(m) > 0).map(m => {
-                            return {
-                                userUserId: m,
-                                tradeTransactionId: transaction.transaction_id
-                            }
-                        }))
-                        trades_league.push({
-                            transaction_id: transaction.transaction_id,
-                            leagueLeagueId: league.league_id,
-                            status_updated: transaction.status_updated,
-                            rosters: league.rosters,
-                            managers: managers,
-                            players: [...Object.keys(adds), ...draft_picks.map(pick => `${pick.season} ${pick.round}.${pick.order}`)],
-                            adds: adds,
-                            drops: drops,
-                            draft_picks: draft_picks,
-                            drafts: league.drafts,
-                            price_check: pricecheck
-                        })
-
-
+                    let older = Trade.count({
+                        where: {
+                            [Op.and]: [
+                                { leagueLeagueId: league.league_id },
+                                { status_updated: { [Op.lt]: parseInt(oldest) } }
+                            ]
+                        }
                     })
+
+                    return older
+                }
+
+                let older = 0;
+                let offset = 0;
+
+                while (older === 0 && offset < week_to_fetch) {
+                    older = await updateTradesWeek(week_to_fetch - offset);
+                    offset++;
+                }
 
             } catch (error) {
                 console.log(error.message)
