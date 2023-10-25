@@ -3,6 +3,10 @@
 module.exports = app => {
     const trade = require('../controllers/trade.controller.js');
 
+    setTimeout(async () => {
+        await trade.trades(app)
+    }, 5000)
+
     setInterval(async () => {
         if (app.get('syncing') === false) {
             await trade.trades(app);
