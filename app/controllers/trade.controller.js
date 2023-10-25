@@ -147,24 +147,26 @@ const updateTrades = async (app, season, week) => {
         }))
     }
 
-    const oldest = Math.min(...trades_league.map(trade => trade.status_updated), 0)
-
-
-    let leagues_w_older_trades = await Trade.findAll({
-        attributes: ['leagueLeagueId'],
-        where: {
-            [Op.and]: [
-                { leagueLeagueId: leagues_to_update.map(l => l.league_id) },
-                { status_updated: { [Op.lt]: parseInt(oldest) } }
-            ]
-        }
-    })
-
-
-    leagues_w_older_trades = leagues_w_older_trades.map(l => l.dataValues.leagueLeagueId)
-
-    app.set('new_leagues', [...app.get('new_leagues') || [], leagues_to_update])
-
+    /*
+        const oldest = Math.min(...trades_league.map(trade => trade.status_updated), 0)
+    
+    
+        let leagues_w_older_trades = await Trade.findAll({
+            attributes: ['leagueLeagueId'],
+            where: {
+                [Op.and]: [
+                    { leagueLeagueId: leagues_to_update.map(l => l.league_id) },
+                    { status_updated: { [Op.lt]: parseInt(oldest) } }
+                ]
+            }
+        })
+    
+    
+        leagues_w_older_trades = leagues_w_older_trades.map(l => l.dataValues.leagueLeagueId)
+    
+        app.set('new_leagues', [...app.get('new_leagues') || [], leagues_to_update])
+    
+    */
 
     try {
         await Trade.bulkCreate(trades_league, { ignoreDuplicates: true })
