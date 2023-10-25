@@ -5,6 +5,7 @@ const League = db.leagues;
 const Trade = db.trades;
 const Op = db.Sequelize.Op;
 const axios = require('../api/axiosInstance');
+const Sequelize = db.Sequelize;
 
 const updateTrades = async (app, season, week) => {
     const updateTradesWeek = async (league, week_to_fetch, trades_league, trades_users) => {
@@ -107,17 +108,32 @@ const updateTrades = async (app, season, week) => {
     const increment = 250
 
     let leagues_to_update;
+
+    let conditions = [
+        { season: season },
+        {
+            settings: {
+                disable_trades: 0
+            }
+        }
+    ]
+
+    const week_to_fetch = week - (process.env.WEEK_OFFSET || 0);
+
+    if (state.week !== week_to_fetch) {
+        conditions.push(
+            Sequelize.where(
+                Sequelize.literal(`(SELECT COUNT(*) FROM Trades WHERE Trades."leagueLeagueId" = League.league_id AND Trades.week = ${week_to_fetch})`),
+                '=',
+                0
+            )
+        )
+    }
+
     try {
         leagues_to_update = await League.findAll({
             where: {
-                [Op.and]: [
-                    { season: season },
-                    {
-                        settings: {
-                            disable_trades: 0
-                        }
-                    }
-                ]
+                [Op.and]: conditions
             },
             order: [['createdAt', 'ASC']],
             offset: i,
@@ -127,7 +143,7 @@ const updateTrades = async (app, season, week) => {
     } catch (error) {
         console.log(error)
     }
-    const week_to_fetch = week - (process.env.WEEK_OFFSET || 0);
+
 
     console.log(`Updating trades for ${i + 1}-${Math.min(i + 1 + increment, i + leagues_to_update.length)} Leagues for WEEK ${week_to_fetch}...`)
 
