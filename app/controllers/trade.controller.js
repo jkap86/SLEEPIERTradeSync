@@ -40,7 +40,7 @@ const updateTrades = async (app, season, week) => {
 
     let min = new Date().getMinutes()
 
-    const week_to_fetch = Math.max(Math.min(week - min, week), 1)
+    const week_to_fetch = week
 
     for (let j = 0; j < increment; j += 25) {
         await Promise.all(leagues_to_update.filter(l => l.rosters.find(r => r?.players?.length > 0)).slice(j, j + 25).map(async league => {
