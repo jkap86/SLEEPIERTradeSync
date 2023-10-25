@@ -32,9 +32,9 @@ const updateTrades = async (app, season, week) => {
     } catch (error) {
         console.log(error)
     }
-    console.log(`Updating trades for ${i + 1}-${Math.min(i + 1 + increment, i + leagues_to_update.length)} Leagues...`)
+    const week_to_fetch = week - (process.env.WEEK_OFFSET || 0);
 
-    const week_to_fetch = week;
+    console.log(`Updating trades for ${i + 1}-${Math.min(i + 1 + increment, i + leagues_to_update.length)} Leagues for WEEK ${week_to_fetch}...`)
 
     const trades_league = []
     const trades_users = []
