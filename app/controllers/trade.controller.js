@@ -94,7 +94,8 @@ const updateTrades = async (app, season, week) => {
                     drops: drops,
                     draft_picks: draft_picks,
                     drafts: league.drafts,
-                    price_check: pricecheck
+                    price_check: pricecheck,
+                    week: week_to_fetch
                 })
 
 
@@ -169,7 +170,7 @@ const updateTrades = async (app, season, week) => {
     */
 
     try {
-        await Trade.bulkCreate(trades_league, { ignoreDuplicates: true })
+        await Trade.bulkCreate(trades_league, { updateOnDuplicate: ['week'] })
         await db.sequelize.model('userTrades').bulkCreate(trades_users, { ignoreDuplicates: true })
 
         /*
