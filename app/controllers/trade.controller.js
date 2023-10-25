@@ -9,7 +9,7 @@ const axios = require('../api/axiosInstance');
 const updateTrades = async (app, season, week) => {
     const state = app.get('state')
     let i = app.get('trades_sync_counter')
-    const increment = 100
+    const increment = 250
 
     let leagues_to_update;
     try {
@@ -41,7 +41,7 @@ const updateTrades = async (app, season, week) => {
 
     let min = new Date().getMinutes()
 
-    for (let j = 0; j < increment; j += 25) {
+    for (let j = 0; j < increment; j += 10) {
         await Promise.all(leagues_to_update.filter(l => l.rosters.find(r => r?.players?.length > 0)).slice(j, j + 25).map(async league => {
 
             try {
