@@ -6,6 +6,7 @@ const Trade = db.trades;
 const Op = db.Sequelize.Op;
 const axios = require('../api/axiosInstance');
 const Sequelize = db.Sequelize;
+const sequelizse = db.sequelize;
 
 const updateTrades = async (app, season, week) => {
     const updateTradesWeek = async (league, week_to_fetch, trades_league, trades_users) => {
@@ -84,6 +85,7 @@ const updateTrades = async (app, season, week) => {
                         tradeTransactionId: transaction.transaction_id
                     }
                 }))
+
                 trades_league.push({
                     transaction_id: transaction.transaction_id,
                     leagueLeagueId: league.league_id,
@@ -95,16 +97,16 @@ const updateTrades = async (app, season, week) => {
                     drops: drops,
                     draft_picks: draft_picks,
                     drafts: league.drafts,
-                    price_check: pricecheck,
-                    week: week_to_fetch
+                    price_check: pricecheck
                 })
 
 
             })
     }
 
-    const state = app.get('state')
-    let i = app.get('trades_sync_counter')
+    const week_to_fetch = week - (app.get('week_offset') || 0);
+
+
     const increment = 250
 
     let leagues_to_update;
@@ -118,32 +120,24 @@ const updateTrades = async (app, season, week) => {
         }
     ]
 
-    const week_to_fetch = week - (process.env.WEEK_OFFSET || 0);
+    let i = app.get('trades_sync_counter')
 
-    if (state.week !== week_to_fetch) {
-        const leagues_w_trades = await Trade.findAll({
-            attributes: ['leagueLeagueId'],
-            where: {
-                week: week_to_fetch
-            },
-            raw: true,
-            distinct: true
-        })
-
-        const league_ids = Array.from(new Set(leagues_w_trades.map(l => l.leagueLeagueId)))
-
+    if (week !== week_to_fetch) {
+        i = 0;
 
         conditions.push(
+
             {
-                league_id: {
-                    [Op.not]: league_ids
+                [Op.not]: {
+                    settings: { [Op.contains]: { trades_updated: [week_to_fetch] } }
                 }
+
             }
         )
     }
 
     try {
-        leagues_to_update = await League.findAll({
+        const leagues_db = await League.findAndCountAll({
             where: {
                 [Op.and]: conditions
             },
@@ -153,15 +147,11 @@ const updateTrades = async (app, season, week) => {
             raw: true
         })
 
-        const total_leagues = await League.count()
+        leagues_to_update = leagues_db.rows
 
-        const total_to_update = await League.count({
-            where: {
-                [Op.and]: conditions
-            }
-        })
 
-        console.log({ total_to_update, total_leagues })
+
+        console.log({ count: leagues_db.count })
     } catch (error) {
         console.log(error)
     }
@@ -186,6 +176,21 @@ const updateTrades = async (app, season, week) => {
         }))
     }
 
+    const leagues_updated_matchupinfo = leagues_to_update
+        .filter(l => l.rosters.find(r => r?.players?.length > 0))
+        .map(l => {
+            const trades_updated = (l.settings.trades_updated || []).filter(w => w !== week_to_fetch);
+
+
+            return {
+                league_id: l.league_id,
+                settings: {
+                    ...l.settings,
+                    trades_updated: [...trades_updated, week_to_fetch]
+                }
+            }
+        })
+
     /*
         const oldest = Math.min(...trades_league.map(trade => trade.status_updated), 0)
     
@@ -208,7 +213,8 @@ const updateTrades = async (app, season, week) => {
     */
 
     try {
-        await Trade.bulkCreate(trades_league, { updateOnDuplicate: ['week'] })
+        await League.bulkCreate(leagues_updated_matchupinfo, { updateOnDuplicate: ['settings'] });
+        await Trade.bulkCreate(trades_league, { ignoreDuplicates: true })
         await db.sequelize.model('userTrades').bulkCreate(trades_users, { ignoreDuplicates: true })
 
         /*
@@ -227,8 +233,18 @@ const updateTrades = async (app, season, week) => {
     }
 
 
+
+
     if (leagues_to_update.length < increment) {
         app.set('trades_sync_counter', 0)
+
+        const week_offset = app.get('week_offset') || 0;
+
+        if (week - 1 === week_offset) {
+            app.set('week_offset', 0)
+        } else {
+            app.set('week_offset', week_offset + 1)
+        }
     } else {
         app.set('trades_sync_counter', i + increment)
     }

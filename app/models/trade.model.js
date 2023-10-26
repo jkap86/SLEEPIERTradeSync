@@ -12,9 +12,6 @@ module.exports = (sequelize, Sequelize) => {
         status_updated: {
             type: DataTypes.BIGINT
         },
-        week: {
-            type: Sequelize.INTEGER,
-        },
         rosters: {
             type: Sequelize.JSONB,
         },
