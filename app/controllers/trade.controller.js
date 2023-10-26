@@ -121,12 +121,24 @@ const updateTrades = async (app, season, week) => {
     const week_to_fetch = week - (process.env.WEEK_OFFSET || 0);
 
     if (state.week !== week_to_fetch) {
+        const leagues_w_trades = await Trade.findAll({
+            attributes: ['leagueLeagueId'],
+            where: {
+                week: week_to_fetch
+            },
+            raw: true,
+            distinct: true
+        })
+
+        const league_ids = Array.from(new Set(leagues_w_trades.map(l => l.leagueLeagueId)))
+
+
         conditions.push(
-            Sequelize.where(
-                Sequelize.literal(`(SELECT COUNT(*) FROM Trades WHERE Trades."leagueLeagueId" = League.league_id AND Trades.week = ${week_to_fetch})`),
-                '=',
-                0
-            )
+            {
+                league_id: {
+                    [Op.not]: league_ids
+                }
+            }
         )
     }
 
@@ -140,6 +152,16 @@ const updateTrades = async (app, season, week) => {
             limit: increment,
             raw: true
         })
+
+        const total_leagues = await League.count()
+
+        const total_to_update = await League.count({
+            where: {
+                [Op.and]: conditions
+            }
+        })
+
+        console.log({ total_to_update, total_leagues })
     } catch (error) {
         console.log(error)
     }
@@ -206,9 +228,6 @@ const updateTrades = async (app, season, week) => {
 
 
     if (leagues_to_update.length < increment) {
-        console.log('Beginning trade fetch for new leagues...')
-
-
         app.set('trades_sync_counter', 0)
     } else {
         app.set('trades_sync_counter', i + increment)
