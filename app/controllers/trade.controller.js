@@ -176,8 +176,8 @@ const updateTrades = async (app, season, week) => {
         }))
     }
 
-    const leagues_updated_matchupinfo = leagues_to_update
-        .filter(l => l.rosters.find(r => r?.players?.length > 0))
+    const leagues_updated_trades = leagues_to_update
+        //    .filter(l => l.rosters.find(r => r?.players?.length > 0))
         .map(l => {
             const trades_updated = (l.settings.trades_updated || []).filter(w => w !== week_to_fetch);
 
@@ -213,7 +213,7 @@ const updateTrades = async (app, season, week) => {
     */
 
     try {
-        await League.bulkCreate(leagues_updated_matchupinfo, { updateOnDuplicate: ['settings'] });
+        await League.bulkCreate(leagues_updated_trades, { updateOnDuplicate: ['settings'] });
         await Trade.bulkCreate(trades_league, { ignoreDuplicates: true })
         await db.sequelize.model('userTrades').bulkCreate(trades_users, { ignoreDuplicates: true })
 
