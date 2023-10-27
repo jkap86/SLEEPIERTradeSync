@@ -1,6 +1,7 @@
 'use strict'
 
 const db = require("../models");
+const User = db.users;
 const League = db.leagues;
 const Trade = db.trades;
 const Op = db.Sequelize.Op;
@@ -191,43 +192,19 @@ const updateTrades = async (app, season, week) => {
             }
         })
 
-    /*
-        const oldest = Math.min(...trades_league.map(trade => trade.status_updated), 0)
-    
-    
-        let leagues_w_older_trades = await Trade.findAll({
-            attributes: ['leagueLeagueId'],
-            where: {
-                [Op.and]: [
-                    { leagueLeagueId: leagues_to_update.map(l => l.league_id) },
-                    { status_updated: { [Op.lt]: parseInt(oldest) } }
-                ]
-            }
-        })
-    
-    
-        leagues_w_older_trades = leagues_w_older_trades.map(l => l.dataValues.leagueLeagueId)
-    
-        app.set('new_leagues', [...app.get('new_leagues') || [], leagues_to_update])
-    
-    */
+    const trade_user_ids = trades_users.map(tu => {
+        return {
+            user_id: tu.userUserId
+        }
+    })
 
     try {
+        await User.bulkCreate(trade_user_ids, { ignoreDuplicates: true });
         await League.bulkCreate(leagues_updated_trades, { updateOnDuplicate: ['settings'] });
-        await Trade.bulkCreate(trades_league, { ignoreDuplicates: true })
-        await db.sequelize.model('userTrades').bulkCreate(trades_users, { ignoreDuplicates: true })
+        await Trade.bulkCreate(trades_league, { ignoreDuplicates: true });
+        await db.sequelize.model('userTrades').bulkCreate(trades_users, { ignoreDuplicates: true });
 
-        /*
-        const trades_deleted = await Trade.destroy({
-            where: {
-                status_updated: {
-                    [Op.lt]: new Date().getTime() - 30 * 24 * 60 * 60 * 1000
-                }
-            }
-        })
- 
-        console.log(`${trades_deleted} Trades deleted...`)
-        */
+
     } catch (error) {
         console.log(error)
     }
