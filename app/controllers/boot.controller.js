@@ -7,7 +7,7 @@ const fs = require('fs');
 exports.boot = async (app) => {
 
     app.set('trades_sync_counter', 0);
-    app.set('week_offset', 0);
+    app.set('week_offset', process.env.WEEK_OFFSET || 0);
 
     app.set('leagues_to_retry', []);
 

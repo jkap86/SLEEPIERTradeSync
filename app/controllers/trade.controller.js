@@ -150,15 +150,13 @@ const updateTrades = async (app, season, week) => {
 
         leagues_to_update = leagues_db.rows
 
-
-
         console.log({ count: leagues_db.count })
+
+        console.log(`Updating trades for ${i + 1}-${Math.min(i + 1 + increment, i + leagues_to_update.length)} Leagues for WEEK ${week_to_fetch}...`)
     } catch (error) {
         console.log(error)
     }
 
-
-    console.log(`Updating trades for ${i + 1}-${Math.min(i + 1 + increment, i + leagues_to_update.length)} Leagues for WEEK ${week_to_fetch}...`)
 
     const trades_league = []
     const trades_users = []
