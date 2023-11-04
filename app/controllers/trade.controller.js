@@ -165,17 +165,9 @@ const updateTrades = async (app, season, week) => {
         const trades_users = []
 
 
-        for (let j = 0; j < increment; j += Math.floor(increment / 10)) {
-            await Promise.all(leagues_to_update.filter(l => l.rosters.find(r => r?.players?.length > 0)).slice(j, j + Math.floor(increment / 10)).map(async league => {
+        for (let j = 0; j < increment; j++) {
+            await updateTradesWeek(leagues_to_update[j], week_to_fetch, trades_league, trades_users)
 
-                try {
-                    await updateTradesWeek(league, week_to_fetch, trades_league, trades_users)
-
-                } catch (error) {
-                    console.log(error.message)
-                }
-
-            }))
         }
 
         const leagues_updated_trades = leagues_to_update
