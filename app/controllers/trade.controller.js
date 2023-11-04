@@ -109,7 +109,7 @@ const updateTrades = async (app, season, week) => {
 
 
     let increment
-    if (week === 1) {
+    if (week_to_fetch === 1) {
         increment = 50
     } else {
         increment = 250
@@ -128,7 +128,7 @@ const updateTrades = async (app, season, week) => {
 
     let i = app.get('trades_sync_counter')
 
-    if (week !== week_to_fetch) {
+    if (week !== week_to_fetch && week_to_fetch !== 1) {
         i = 0;
 
         conditions.push(
