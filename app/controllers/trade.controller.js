@@ -158,75 +158,76 @@ const updateTrades = async (app, season, week) => {
         console.log({ count: leagues_db.count })
 
         console.log(`Updating trades for ${i + 1}-${Math.min(i + 1 + increment, i + leagues_to_update.length)} Leagues for WEEK ${week_to_fetch}...`)
-    } catch (error) {
-        console.log(error)
-    }
 
 
-    const trades_league = []
-    const trades_users = []
+
+        const trades_league = []
+        const trades_users = []
 
 
-    for (let j = 0; j < increment; j += 25) {
-        await Promise.all(leagues_to_update.filter(l => l.rosters.find(r => r?.players?.length > 0)).slice(j, j + 25).map(async league => {
+        for (let j = 0; j < increment; j += Math.floor(increment / 10)) {
+            await Promise.all(leagues_to_update.filter(l => l.rosters.find(r => r?.players?.length > 0)).slice(j, j + Math.floor(increment / 10)).map(async league => {
 
-            try {
-                await updateTradesWeek(league, week_to_fetch, trades_league, trades_users)
+                try {
+                    await updateTradesWeek(league, week_to_fetch, trades_league, trades_users)
 
-            } catch (error) {
-                console.log(error.message)
-            }
-
-        }))
-    }
-
-    const leagues_updated_trades = leagues_to_update
-        //    .filter(l => l.rosters.find(r => r?.players?.length > 0))
-        .map(l => {
-            const trades_updated = (l.settings.trades_updated || []).filter(w => w !== week_to_fetch);
-
-
-            return {
-                league_id: l.league_id,
-                settings: {
-                    ...l.settings,
-                    trades_updated: [...trades_updated, week_to_fetch]
+                } catch (error) {
+                    console.log(error.message)
                 }
+
+            }))
+        }
+
+        const leagues_updated_trades = leagues_to_update
+            //    .filter(l => l.rosters.find(r => r?.players?.length > 0))
+            .map(l => {
+                const trades_updated = (l.settings.trades_updated || []).filter(w => w !== week_to_fetch);
+
+
+                return {
+                    league_id: l.league_id,
+                    settings: {
+                        ...l.settings,
+                        trades_updated: [...trades_updated, week_to_fetch]
+                    }
+                }
+            })
+
+        const trade_user_ids = trades_users.map(tu => {
+            return {
+                user_id: tu.userUserId
             }
         })
 
-    const trade_user_ids = trades_users.map(tu => {
-        return {
-            user_id: tu.userUserId
+        try {
+            await User.bulkCreate(trade_user_ids, { ignoreDuplicates: true });
+            await League.bulkCreate(leagues_updated_trades, { updateOnDuplicate: ['settings'] });
+            await Trade.bulkCreate(trades_league, { ignoreDuplicates: true });
+            await db.sequelize.model('userTrades').bulkCreate(trades_users, { ignoreDuplicates: true });
+
+
+        } catch (error) {
+            console.log(error)
         }
-    })
-
-    try {
-        await User.bulkCreate(trade_user_ids, { ignoreDuplicates: true });
-        await League.bulkCreate(leagues_updated_trades, { updateOnDuplicate: ['settings'] });
-        await Trade.bulkCreate(trades_league, { ignoreDuplicates: true });
-        await db.sequelize.model('userTrades').bulkCreate(trades_users, { ignoreDuplicates: true });
 
 
+
+
+        if (leagues_to_update.length < increment) {
+            app.set('trades_sync_counter', 0)
+
+            const week_offset = app.get('week_offset') || 0;
+
+            if (week - 1 === week_offset) {
+                app.set('week_offset', 0)
+            } else {
+                app.set('week_offset', week_offset + 1)
+            }
+        } else {
+            app.set('trades_sync_counter', i + increment)
+        }
     } catch (error) {
         console.log(error)
-    }
-
-
-
-
-    if (leagues_to_update.length < increment) {
-        app.set('trades_sync_counter', 0)
-
-        const week_offset = app.get('week_offset') || 0;
-
-        if (week - 1 === week_offset) {
-            app.set('week_offset', 0)
-        } else {
-            app.set('week_offset', week_offset + 1)
-        }
-    } else {
-        app.set('trades_sync_counter', i + increment)
     }
 
 }
