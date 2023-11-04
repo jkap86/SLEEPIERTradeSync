@@ -108,7 +108,12 @@ const updateTrades = async (app, season, week) => {
     const week_to_fetch = week - (app.get('week_offset') || 0);
 
 
-    const increment = 250
+    let increment
+    if (week === 1) {
+        increment = 50
+    } else {
+        increment = 250
+    }
 
     let leagues_to_update;
 
