@@ -25,6 +25,7 @@ db.sequelize = sequelize;
 db.users = require("./user.model.js")(sequelize, Sequelize);
 db.leagues = require("./league.model.js")(sequelize, Sequelize);
 db.trades = require("./trade.model.js")(sequelize, Sequelize);
+db.trades_old = require("./trade_old.model.js")(sequelize, Sequelize);
 
 const player_data = require("./dynastyrankings.model.js")(sequelize, Sequelize)
 db.dynastyrankings = player_data.DynastyRankings
@@ -35,9 +36,13 @@ db.leagues.belongsToMany(db.users, { through: { model: 'userLeagues' } })
 
 db.leagues.hasMany(db.trades)
 db.trades.belongsTo(db.leagues)
+db.leagues.hasMany(db.trades_old)
+db.trades_old.belongsTo(db.leagues)
 
-db.users.belongsToMany(db.trades, { through: { model: 'userTrades', onDelete: 'CASCADE' } })
-db.trades.belongsToMany(db.users, { through: { model: 'userTrades', onDelete: 'CASCADE' } })
+db.users.belongsToMany(db.trades, { through: { model: 'userTrades'} })
+db.trades.belongsToMany(db.users, { through: { model: 'userTrades' } })
+db.users.belongsToMany(db.trades_old, { through: { model: 'userTrades' } })
+db.trades_old.belongsToMany(db.users, { through: { model: 'userTrades'} })
 
 /*
 db.users.belongsToMany(db.users, { as: 'leaguemates', through: 'userLeaguemates' })

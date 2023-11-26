@@ -4,17 +4,24 @@ const db = require("../models");
 const User = db.users;
 const League = db.leagues;
 const Trade = db.trades;
+const TradeOld = db.trades_old;
 const Op = db.Sequelize.Op;
 const axios = require('../api/axiosInstance');
 const Sequelize = db.Sequelize;
-const sequelizse = db.sequelize;
+const sequelize = db.sequelize;
 
 const updateTrades = async (app, season, week) => {
     const updateTradesWeek = async (league, week_to_fetch, trades_league, trades_users) => {
         let transactions_league = await axios.get(`https://api.sleeper.app/v1/league/${league.league_id}/transactions/${week_to_fetch}`);
 
         transactions_league.data
-            .filter(t => t.type === 'trade')
+            .filter(
+                t => t.type === 'trade'
+                    && (
+                        new Date(t.status_updated).getTime() >=
+                        (new Date().getTime() - 30 * 24 * 60 * 60 * 1000)
+                    )
+            )
             .map(transaction => {
                 const draft_order = league.drafts.find(d => d.draft_order && d.status !== 'complete')?.draft_order
 
@@ -166,8 +173,9 @@ const updateTrades = async (app, season, week) => {
 
 
         for (let j = 0; j < increment; j++) {
-            await updateTradesWeek(leagues_to_update[j], week_to_fetch, trades_league, trades_users)
-
+            if (leagues_to_update[j]?.league_id) {
+                await updateTradesWeek(leagues_to_update[j], week_to_fetch, trades_league, trades_users)
+            }
         }
 
         const leagues_updated_trades = leagues_to_update
@@ -224,6 +232,45 @@ const updateTrades = async (app, season, week) => {
 
 }
 
+const moveOldTrades = async () => {
+    console.log('Moving old trades..');
+
+    const transaction = await sequelize.transaction(); 
+
+    try {
+        const trades_to_move = await Trade.findAll({
+            limit: 500,
+            where: {
+                status_updated: {
+                    [Op.lt]: (new Date().getTime() ) - (30 * 24 * 60 * 60 * 1000)
+                }
+            },
+            raw: true,
+            transaction
+        })
+
+        console.log(`${trades_to_move.length} Old Trades to Move...`)
+        await TradeOld.bulkCreate(trades_to_move, { 
+            ignoreDuplicates: true ,
+            transaction
+        });
+
+        await Trade.destroy({
+            where: {
+                transaction_id: trades_to_move.map(trade => trade.transaction_id)
+            },
+            transaction
+        })
+
+        await transaction.commit();
+        console.log('Trades MOved...')
+    } catch (error) {
+        await transaction.rollback(); 
+        console.log(error)
+    }
+}
+
+
 exports.trades = async (app) => {
     app.set('syncing', true);
 
@@ -233,8 +280,11 @@ exports.trades = async (app) => {
 
     const week = state.season_type === 'regular' ? state.week : 1
 
-    await updateTrades(app, state.season, week)
+    await updateTrades(app, state.season, week);
+    await moveOldTrades();
 
     app.set('syncing', false)
     console.log('Trade Sync Complete...')
 }
+
+
