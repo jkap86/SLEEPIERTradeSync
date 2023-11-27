@@ -17,10 +17,6 @@ const updateTrades = async (app, season, week) => {
         transactions_league.data
             .filter(
                 t => t.type === 'trade'
-                    && (
-                        new Date(t.status_updated).getTime() >=
-                        (new Date().getTime() - 30 * 24 * 60 * 60 * 1000)
-                    )
             )
             .map(transaction => {
                 const draft_order = league.drafts.find(d => d.draft_order && d.status !== 'complete')?.draft_order
@@ -235,14 +231,14 @@ const updateTrades = async (app, season, week) => {
 const moveOldTrades = async () => {
     console.log('Moving old trades..');
 
-    const transaction = await sequelize.transaction(); 
+    const transaction = await sequelize.transaction();
 
     try {
         const trades_to_move = await Trade.findAll({
             limit: 500,
             where: {
                 status_updated: {
-                    [Op.lt]: (new Date().getTime() ) - (30 * 24 * 60 * 60 * 1000)
+                    [Op.lt]: (new Date().getTime()) - (30 * 24 * 60 * 60 * 1000)
                 }
             },
             raw: true,
@@ -250,22 +246,53 @@ const moveOldTrades = async () => {
         })
 
         console.log(`${trades_to_move.length} Old Trades to Move...`)
-        await TradeOld.bulkCreate(trades_to_move, { 
-            ignoreDuplicates: true ,
+
+        const transaction_ids_to_move = trades_to_move.map(trade => trade.transaction_id)
+
+        const userTrade_to_move = await sequelize.model('userTrades').findAll({
+            where: {
+                tradeTransactionId: transaction_ids_to_move
+            },
+            raw: true,
+            transaction
+        })
+
+
+        await TradeOld.bulkCreate(trades_to_move, {
+            ignoreDuplicates: true,
             transaction
         });
 
+        await sequelize.model('userTradesOld').bulkCreate(
+            userTrade_to_move.map(t => {
+                return {
+                    userUserId: t.userUserId,
+                    tradesOldTransactionId: t.tradeTransactionId
+                }
+            }),
+            {
+                ignoreDuplicates: true,
+                transaction
+            })
+
         await Trade.destroy({
             where: {
-                transaction_id: trades_to_move.map(trade => trade.transaction_id)
+                transaction_id: transaction_ids_to_move
+            },
+            transaction
+        })
+
+        await sequelize.model('userTrades').destroy({
+            where: {
+                tradeTransactionId: transaction_ids_to_move
             },
             transaction
         })
 
         await transaction.commit();
-        console.log('Trades MOved...')
+        console.log('Trades Moved...')
     } catch (error) {
-        await transaction.rollback(); 
+        await transaction.rollback();
         console.log(error)
     }
 }

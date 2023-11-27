@@ -36,13 +36,15 @@ db.leagues.belongsToMany(db.users, { through: { model: 'userLeagues' } })
 
 db.leagues.hasMany(db.trades)
 db.trades.belongsTo(db.leagues)
+
 db.leagues.hasMany(db.trades_old)
 db.trades_old.belongsTo(db.leagues)
 
 db.users.belongsToMany(db.trades, { through: { model: 'userTrades'} })
 db.trades.belongsToMany(db.users, { through: { model: 'userTrades' } })
-db.users.belongsToMany(db.trades_old, { through: { model: 'userTrades' } })
-db.trades_old.belongsToMany(db.users, { through: { model: 'userTrades'} })
+
+db.users.belongsToMany(db.trades_old, { through: { model: 'userTradesOld' } })
+db.trades_old.belongsToMany(db.users, { through: { model: 'userTradesOld'} })
 
 /*
 db.users.belongsToMany(db.users, { as: 'leaguemates', through: 'userLeaguemates' })
