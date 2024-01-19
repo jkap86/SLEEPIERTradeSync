@@ -37,7 +37,7 @@ module.exports = (sequelize, Sequelize, user_league) => {
     }, {
         indexes: [
             {
-                fields: ['league_id']
+                fields: ['league_id', 'settings']
             }
         ],
     });

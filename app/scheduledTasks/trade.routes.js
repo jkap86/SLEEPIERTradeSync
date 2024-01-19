@@ -1,24 +1,26 @@
-'use strict'
+"use strict";
 
-module.exports = app => {
-    const trade = require('../controllers/trade.controller.js');
+module.exports = (app) => {
+  const trade = require("../controllers/trade.controller.js");
+  const draftpick = require("../controllers/draftpick.controller.js");
+  const { logMemoryUsage } = require("../helpers/logMemoryUsage.js");
 
-    setTimeout(async () => {
-        await trade.trades(app)
-    }, 5000)
+  setTimeout(async () => {
+    await draftpick.sync(app);
 
     setInterval(async () => {
-        if (app.get('syncing') === false) {
-            await trade.trades(app);
+      if (app.get("syncing") === false) {
+        const minute = new Date().getMinutes();
 
+        if (minute % 10 === 0) {
+          await draftpick.sync(app);
         } else {
-            console.log('Skipping SYNC...')
+          await trade.trades(app);
         }
-        const used = process.memoryUsage()
-        for (let key in used) {
-            console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`);
-        }
-    }, 30 * 1000)
-
-
-}
+        logMemoryUsage();
+      } else {
+        console.log("Skipping SYNC...");
+      }
+    }, 60 * 1000);
+  }, 5000);
+};
