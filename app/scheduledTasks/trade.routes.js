@@ -6,13 +6,13 @@ module.exports = (app) => {
   const { logMemoryUsage } = require("../helpers/logMemoryUsage.js");
 
   setTimeout(async () => {
-    await draftpick.sync(app);
+    await trade.trades(app);
 
     setInterval(async () => {
       if (app.get("syncing") === false) {
         const minute = new Date().getMinutes();
 
-        if (minute % 5 === 0) {
+        if (minute % 10 === 0) {
           await draftpick.sync(app);
         } else {
           await trade.trades(app);

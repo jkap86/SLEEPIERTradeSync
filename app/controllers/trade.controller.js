@@ -3,6 +3,7 @@
 const db = require("../models");
 const League = db.leagues;
 const Trade = db.trades;
+const Draft = db.drafts;
 const Op = db.Sequelize.Op;
 const axios = require("../api/axiosInstance");
 const Sequelize = db.Sequelize;
@@ -178,16 +179,18 @@ const getTrades = async ({ leagues, week_to_fetch }) => {
 
 const getLeagues = async ({ increment, counter }) => {
   const leagues_db = await League.findAll({
-    attributes: ["league_id", "rosters", "drafts"],
+    attributes: ["league_id", "rosters", "createdAt"],
     where: {
       settings: {
         disable_trades: 0,
       },
     },
+    include: {
+      model: Draft,
+    },
     order: [["createdAt", "ASC"]],
     offset: counter,
     limit: increment,
-    raw: true,
   });
 
   return leagues_db;
