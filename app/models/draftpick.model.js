@@ -21,6 +21,9 @@ module.exports = (sequelize, Sequelize) => {
     picked_by: {
       type: Sequelize.STRING,
     },
+    league_type: {
+      type: Sequelize.STRING,
+    },
   });
 
   return Draftpick;

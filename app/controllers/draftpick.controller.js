@@ -68,12 +68,15 @@ const getDraftPicks = async (drafts_active) => {
 
           const leagueLeagueId = draft_active.league_id;
 
+          const league_type = draft_active.league_type;
+
           draft_picks_all.push({
             draftDraftId: draft_id,
             pick_no,
             player_id,
             roster_id,
             picked_by,
+            league_type,
             leagueLeagueId,
           });
         });

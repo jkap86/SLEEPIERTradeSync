@@ -21,6 +21,9 @@ module.exports = (sequelize, Sequelize) => {
     last_picked: {
       type: DataTypes.BIGINT,
     },
+    league_type: {
+      type: Sequelize.STRING,
+    },
   });
 
   return Draft;
