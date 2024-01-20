@@ -12,7 +12,7 @@ module.exports = (app) => {
       if (app.get("syncing") === false) {
         const minute = new Date().getMinutes();
 
-        if (minute % 10 === 0) {
+        if (minute % 1 === 0) {
           await draftpick.sync(app);
         } else {
           await trade.trades(app);

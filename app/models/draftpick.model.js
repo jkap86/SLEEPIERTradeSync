@@ -2,7 +2,7 @@
 
 module.exports = (sequelize, Sequelize) => {
   const Draftpick = sequelize.define("draftpick", {
-    draft_id: {
+    draftDraftId: {
       type: Sequelize.STRING,
       allowNull: false,
       primaryKey: true,

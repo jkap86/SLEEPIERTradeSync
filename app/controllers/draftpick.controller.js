@@ -3,30 +3,35 @@
 const { fetchDraftPicks } = require("../api/sleeperApi");
 const db = require("../models");
 const Op = db.Sequelize.Op;
-const League = db.leagues;
 const Draftpick = db.draftpicks;
+const Draft = db.drafts;
 
 const getActiveDrafts = async ({ increment, counter, cutoff }) => {
   console.log("Getting Draft IDs");
 
-  const leagues_db = await League.findAll({
+  const drafts_active = await Draft.findAll({
     order: [["createdAt", "ASC"]],
     offset: counter,
     limit: increment,
-    attributes: ["league_id", "drafts", "settings"],
     where: {
       [Op.or]: [
         {
-          settings: {
-            status: "drafting",
-          },
+          status: "drafting",
         },
         {
-          drafts: {
-            [Op.contains]: {
-              [Op.and]: [
+          status: "paused",
+        },
+        {
+          [Op.and]: [
+            {
+              status: "complete",
+            },
+            {
+              [Op.or]: [
                 {
-                  status: "complete",
+                  createdAt: {
+                    [Op.gt]: cutoff,
+                  },
                 },
                 {
                   last_picked: {
@@ -35,33 +40,16 @@ const getActiveDrafts = async ({ increment, counter, cutoff }) => {
                 },
               ],
             },
-          },
-        },
-        {
-          createdAt: { [Op.gt]: cutoff },
+          ],
         },
       ],
     },
     raw: true,
   });
 
-  const drafts_active = leagues_db.flatMap((league) =>
-    league.drafts
-      .filter(
-        (draft) =>
-          draft.status === "drafting" ||
-          (draft.status === "complete" &&
-            (draft.last_picked > cutoff || league.createdAt > cutoff))
-      )
-      .map((draft) => {
-        return {
-          draft_id: draft.draft_id,
-          league_id: league.league_id,
-        };
-      })
-  );
+  console.log({ drafts_active_keys: Object.keys(drafts_active) });
 
-  return { drafts_active, leagues_dbLength: leagues_db.length };
+  return { drafts_active, leagues_dbLength: drafts_active.length };
 };
 
 const getDraftPicks = async (drafts_active) => {
@@ -81,7 +69,7 @@ const getDraftPicks = async (drafts_active) => {
           const leagueLeagueId = draft_active.league_id;
 
           draft_picks_all.push({
-            draft_id,
+            draftDraftId: draft_id,
             pick_no,
             player_id,
             roster_id,
