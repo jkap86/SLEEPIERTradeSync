@@ -6,7 +6,7 @@ module.exports = (app) => {
   const { logMemoryUsage } = require("../helpers/logMemoryUsage.js");
 
   setTimeout(async () => {
-    await trade.trades(app);
+    await draftpick.sync(app);
 
     setInterval(async () => {
       if (app.get("syncing") === false) {

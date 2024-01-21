@@ -77,6 +77,11 @@ const getDraftPicks = async (drafts_active) => {
             roster_id,
             picked_by,
             league_type,
+            budget_percent:
+              draft_active.type === "auction"
+                ? (draft_pick.metadata.amount / draft_active.settings.budget) *
+                  1000
+                : 0,
             leagueLeagueId,
           });
         });

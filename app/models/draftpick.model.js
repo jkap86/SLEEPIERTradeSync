@@ -24,6 +24,9 @@ module.exports = (sequelize, Sequelize) => {
     league_type: {
       type: Sequelize.STRING,
     },
+    budget_percent: {
+      type: Sequelize.INTEGER,
+    },
   });
 
   return Draftpick;

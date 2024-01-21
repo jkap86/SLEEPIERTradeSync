@@ -24,6 +24,9 @@ module.exports = (sequelize, Sequelize) => {
     league_type: {
       type: Sequelize.STRING,
     },
+    settings: {
+      type: Sequelize.JSONB,
+    },
   });
 
   return Draft;
