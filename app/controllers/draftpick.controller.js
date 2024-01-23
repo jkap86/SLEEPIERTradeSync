@@ -5,6 +5,7 @@ const db = require("../models");
 const Op = db.Sequelize.Op;
 const Draftpick = db.draftpicks;
 const Draft = db.drafts;
+const League = db.leagues;
 
 const getActiveDrafts = async ({ increment, counter, cutoff }) => {
   console.log("Getting Draft IDs");
@@ -14,35 +15,85 @@ const getActiveDrafts = async ({ increment, counter, cutoff }) => {
     offset: counter,
     limit: increment,
     where: {
-      [Op.or]: [
+      [Op.and]: [
         {
-          status: "drafting",
-        },
-        {
-          status: "paused",
-        },
-        {
-          [Op.and]: [
+          [Op.or]: [
             {
-              status: "complete",
+              status: "drafting",
             },
             {
-              [Op.or]: [
+              status: "paused",
+            },
+            {
+              [Op.and]: [
                 {
-                  createdAt: {
-                    [Op.gt]: cutoff,
-                  },
+                  status: "complete",
                 },
                 {
-                  last_picked: {
-                    [Op.gt]: cutoff,
-                  },
+                  [Op.or]: [
+                    {
+                      createdAt: {
+                        [Op.gt]: cutoff,
+                      },
+                    },
+                    {
+                      last_picked: {
+                        [Op.gt]: cutoff,
+                      },
+                    },
+                  ],
                 },
               ],
             },
           ],
         },
+        {
+          type: { [Op.not]: "auction" },
+        },
+        {
+          [Op.or]: [
+            {
+              [Op.and]: [
+                {
+                  settings: {
+                    slots_super_flex: 1,
+                  },
+                },
+                {
+                  settings: {
+                    slots_qb: 1,
+                  },
+                },
+              ],
+            },
+            {
+              settings: {
+                slots_qb: 2,
+              },
+            },
+            {
+              settings: {
+                slots_super_flex: 2,
+              },
+            },
+          ],
+        },
+        {
+          settings: {
+            slots_k: 1,
+          },
+        },
       ],
+    },
+    include: {
+      model: League,
+      where: {
+        roster_positions: {
+          [Op.not]: {
+            [Op.contains]: ["K"],
+          },
+        },
+      },
     },
     raw: true,
   });
@@ -77,11 +128,6 @@ const getDraftPicks = async (drafts_active) => {
             roster_id,
             picked_by,
             league_type,
-            budget_percent:
-              draft_active.type === "auction"
-                ? (draft_pick.metadata.amount / draft_active.settings.budget) *
-                  1000
-                : 0,
             leagueLeagueId,
           });
         });
