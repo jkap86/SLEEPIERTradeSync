@@ -29,7 +29,9 @@ exports.trades = async (app) => {
         week_to_fetch: 1,
       });
 
-      await Trade.bulkCreate(trades_batch, { ignoreDuplicates: true });
+      await Trade.bulkCreate(trades_batch, {
+        updateOnDuplicate: ["draft_picks"],
+      });
     } catch (err) {
       console.log(err.message);
     }
@@ -167,7 +169,6 @@ const getTrades = async ({ leagues, week_to_fetch }) => {
             adds: adds,
             drops: drops,
             draft_picks: draft_picks,
-            drafts: league.drafts,
             price_check: pricecheck,
           };
         });

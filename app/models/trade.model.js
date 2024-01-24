@@ -32,9 +32,6 @@ module.exports = (sequelize, Sequelize) => {
       draft_picks: {
         type: Sequelize.JSONB,
       },
-      drafts: {
-        type: Sequelize.JSONB,
-      },
       price_check: {
         type: Sequelize.JSONB,
       },
