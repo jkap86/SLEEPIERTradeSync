@@ -27,6 +27,9 @@ module.exports = (sequelize, Sequelize) => {
     settings: {
       type: Sequelize.JSONB,
     },
+    draft_order: {
+      type: Sequelize.JSONB,
+    },
   });
 
   return Draft;
