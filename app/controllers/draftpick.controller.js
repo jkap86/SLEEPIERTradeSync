@@ -113,18 +113,36 @@ const getDraftPicks = async (drafts_active) => {
       drafts_active.slice(i, i + batchSize).map(async (draft_active) => {
         const draft_picks_draft = await fetchDraftPicks(draft_active.draft_id);
 
+        const kickers = draft_picks_draft
+          .filter((draft_pick) => draft_pick?.metadata?.position === "K")
+          .sort((a, b) => a.pick_no - b.pick_no);
+
         draft_picks_draft.forEach((draft_pick) => {
-          const { draft_id, pick_no, player_id, roster_id, picked_by } =
-            draft_pick;
+          const {
+            draft_id,
+            pick_no,
+            player_id,
+            roster_id,
+            picked_by,
+            metadata,
+          } = draft_pick;
 
           const leagueLeagueId = draft_active.league_id;
 
           const league_type = draft_active.league_type;
 
+          let rookie_pick;
+
+          if (metadata?.position === "K") {
+            rookie_pick =
+              "R" +
+              (kickers.findIndex((obj) => obj.player_id === player_id) + 1);
+          }
+
           draft_picks_all.push({
             draftDraftId: draft_id,
             pick_no,
-            player_id,
+            player_id: rookie_pick || player_id,
             roster_id,
             picked_by,
             league_type,
