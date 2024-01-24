@@ -80,7 +80,26 @@ const getActiveDrafts = async ({ increment, counter, cutoff }) => {
         },
         {
           settings: {
-            slots_k: 1,
+            [Op.and]: [
+              {
+                slots_k: 1,
+              },
+              {
+                [Op.not]: { slots_dl: { [Op.ne]: null } },
+              },
+              {
+                [Op.not]: { slots_lb: { [Op.ne]: null } },
+              },
+              {
+                [Op.not]: { slots_db: { [Op.ne]: null } },
+              },
+              {
+                [Op.not]: { slots_idp_flex: { [Op.ne]: null } },
+              },
+              {
+                [Op.not]: { slots_def: { [Op.ne]: null } },
+              },
+            ],
           },
         },
       ],
