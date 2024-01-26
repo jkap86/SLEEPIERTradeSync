@@ -88,32 +88,30 @@ const getActiveDrafts = async ({ increment, counter, cutoff }) => {
                   },
                 },
                 {
-                  settings: {
-                    player_type: 0,
+                  [Op.not]: {
+                    settings: {
+                      player_type: 1,
+                    },
+                  },
+                },
+                {
+                  [Op.not]: {
+                    settings: {
+                      player_type: 2,
+                    },
                   },
                 },
               ],
             },
             {
               settings: {
-                player_type: 1,
+                player_type: 2,
               },
             },
           ],
         },
       ],
     },
-    include: {
-      model: League,
-      where: {
-        roster_positions: {
-          [Op.not]: {
-            [Op.contains]: ["K"],
-          },
-        },
-      },
-    },
-    raw: true,
   });
 
   console.log({ drafts_active_keys: Object.keys(drafts_active) });
@@ -131,42 +129,46 @@ const getDraftPicks = async (drafts_active) => {
       drafts_active.slice(i, i + batchSize).map(async (draft_active) => {
         const draft_picks_draft = await fetchDraftPicks(draft_active.draft_id);
 
-        const kickers = draft_picks_draft
-          .filter((draft_pick) => draft_pick?.metadata?.position === "K")
-          .sort((a, b) => a.pick_no - b.pick_no);
+        if (
+          !draft_picks_draft.find((pick) => !parseInt(pick.metadata?.years_exp))
+        ) {
+          const kickers = draft_picks_draft
+            .filter((draft_pick) => draft_pick?.metadata?.position === "K")
+            .sort((a, b) => a.pick_no - b.pick_no);
 
-        draft_picks_draft.forEach((draft_pick) => {
-          const {
-            draft_id,
-            pick_no,
-            player_id,
-            roster_id,
-            picked_by,
-            metadata,
-          } = draft_pick;
+          draft_picks_draft.forEach((draft_pick) => {
+            const {
+              draft_id,
+              pick_no,
+              player_id,
+              roster_id,
+              picked_by,
+              metadata,
+            } = draft_pick;
 
-          const leagueLeagueId = draft_active.league_id;
+            const leagueLeagueId = draft_active.league_id;
 
-          const league_type = draft_active.league_type;
+            const league_type = draft_active.league_type;
 
-          let rookie_pick;
+            let rookie_pick;
 
-          if (metadata?.position === "K") {
-            rookie_pick =
-              "R" +
-              (kickers.findIndex((obj) => obj.player_id === player_id) + 1);
-          }
+            if (metadata?.position === "K") {
+              rookie_pick =
+                "R" +
+                (kickers.findIndex((obj) => obj.player_id === player_id) + 1);
+            }
 
-          draft_picks_all.push({
-            draftDraftId: draft_id,
-            pick_no,
-            player_id: rookie_pick || player_id,
-            roster_id,
-            picked_by,
-            league_type,
-            leagueLeagueId,
+            draft_picks_all.push({
+              draftDraftId: draft_id,
+              pick_no,
+              player_id: rookie_pick || player_id,
+              roster_id,
+              picked_by,
+              league_type,
+              leagueLeagueId,
+            });
           });
-        });
+        }
       })
     );
   }
