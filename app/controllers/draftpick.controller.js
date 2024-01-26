@@ -79,36 +79,9 @@ const getActiveDrafts = async ({ increment, counter, cutoff }) => {
           ],
         },
         {
-          [Op.or]: [
-            {
-              [Op.and]: [
-                {
-                  settings: {
-                    slots_k: 1,
-                  },
-                },
-                {
-                  [Op.not]: {
-                    settings: {
-                      player_type: 1,
-                    },
-                  },
-                },
-                {
-                  [Op.not]: {
-                    settings: {
-                      player_type: 2,
-                    },
-                  },
-                },
-              ],
-            },
-            {
-              settings: {
-                player_type: 2,
-              },
-            },
-          ],
+          settings: {
+            slots_k: 1,
+          },
         },
       ],
     },
