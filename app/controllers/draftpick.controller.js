@@ -354,7 +354,7 @@ exports.sync = async (app) => {
   } else {
     app.set("drafts_sync_counter", {
       counter: counter_drafts + increment,
-      cutoff: cutoff,
+      cutoff: cutoff_drafts,
     });
   }
 
@@ -366,7 +366,7 @@ exports.sync = async (app) => {
   } else {
     app.set("auctions_sync_counter", {
       counter: counter_auctions + increment,
-      cutoff: cutoff,
+      cutoff: cutoff_auctions,
     });
   }
 
