@@ -1,19 +1,19 @@
 "use strict";
 
 module.exports = (sequelize, Sequelize) => {
-  const Draftpick = sequelize.define("draftpick", {
+  const Auctionpick = sequelize.define("auctionpick", {
     draftDraftId: {
       type: Sequelize.STRING,
       allowNull: false,
       primaryKey: true,
     },
-    pick_no: {
-      type: Sequelize.INTEGER,
+    player_id: {
+      type: Sequelize.STRING,
       allowNull: false,
       primaryKey: true,
     },
-    player_id: {
-      type: Sequelize.STRING,
+    budget_percent: {
+      type: Sequelize.INTEGER,
     },
     roster_id: {
       type: Sequelize.INTEGER,
@@ -26,5 +26,5 @@ module.exports = (sequelize, Sequelize) => {
     },
   });
 
-  return Draftpick;
+  return Auctionpick;
 };

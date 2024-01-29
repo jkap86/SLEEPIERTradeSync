@@ -5,7 +5,7 @@ const db = require("../models");
 const Op = db.Sequelize.Op;
 const Draftpick = db.draftpicks;
 const Draft = db.drafts;
-const League = db.leagues;
+const Auctionpick = db.auctionpicks;
 
 const getActiveDrafts = async ({ increment, counter, cutoff }) => {
   console.log("Getting Draft IDs");
@@ -80,16 +80,67 @@ const getActiveDrafts = async ({ increment, counter, cutoff }) => {
         },
         {
           settings: {
-            slots_k: 1,
+            player_type: {
+              [Op.not]: 1,
+            },
           },
+        },
+        {
+          [Op.or]: [
+            {
+              settings: {
+                slots_k: 1,
+              },
+            },
+            {
+              settings: {
+                [Op.not]: 2,
+              },
+            },
+          ],
         },
       ],
     },
   });
 
-  console.log({ drafts_active_keys: Object.keys(drafts_active) });
+  console.log({
+    drafts_active_keys: Object.keys(drafts_active).length,
+  });
 
-  return { drafts_active, leagues_dbLength: drafts_active.length };
+  return {
+    drafts_active,
+    leagues_dbLength: drafts_active.length,
+  };
+};
+
+const getCompletedAuctions = async ({ increment, counter }) => {
+  const auctions_complete = await Draft.findAll({
+    order: [["createdAt", "ASC"]],
+    offset: counter,
+    limit: increment,
+    where: {
+      [Op.and]: [
+        {
+          status: "complete",
+        },
+        {
+          type: "auction",
+        },
+      ],
+    },
+    include: {
+      model: Draftpick,
+      where: {
+        draftDraftId: null,
+      },
+      required: false,
+    },
+  });
+
+  return {
+    auctions_complete,
+    auctions_complete_length: auctions_complete.length,
+  };
 };
 
 const getDraftPicks = async (drafts_active) => {
@@ -100,53 +151,149 @@ const getDraftPicks = async (drafts_active) => {
   for (let i = 0; i < drafts_active.length; i += batchSize) {
     await Promise.all(
       drafts_active.slice(i, i + batchSize).map(async (draft_active) => {
-        const draft_picks_draft = await fetchDraftPicks(draft_active.draft_id);
+        try {
+          const draft_picks_draft = await fetchDraftPicks(
+            draft_active.draft_id
+          );
 
-        if (
-          !draft_picks_draft.find((pick) => !parseInt(pick.metadata?.years_exp))
-        ) {
-          const kickers = draft_picks_draft
-            .filter((draft_pick) => draft_pick?.metadata?.position === "K")
-            .sort((a, b) => a.pick_no - b.pick_no);
+          if (
+            draft_picks_draft.find(
+              (pick) => !parseInt(pick.metadata?.years_exp)
+            ) ||
+            draft_picks_draft.find((pick) => pick.metadata?.position === "K")
+          ) {
+            const kickers = draft_picks_draft
+              .filter((draft_pick) => draft_pick?.metadata?.position === "K")
+              .sort((a, b) => a.pick_no - b.pick_no);
 
-          draft_picks_draft.forEach((draft_pick) => {
-            const {
-              draft_id,
-              pick_no,
-              player_id,
-              roster_id,
-              picked_by,
-              metadata,
-            } = draft_pick;
+            draft_picks_draft.forEach((draft_pick) => {
+              const {
+                draft_id,
+                pick_no,
+                player_id,
+                roster_id,
+                picked_by,
+                metadata,
+              } = draft_pick;
 
-            const leagueLeagueId = draft_active.league_id;
+              const leagueLeagueId = draft_active.league_id;
 
-            const league_type = draft_active.league_type;
+              const league_type = draft_active.league_type;
 
-            let rookie_pick;
+              let rookie_pick;
 
-            if (metadata?.position === "K") {
-              rookie_pick =
-                "R" +
-                (kickers.findIndex((obj) => obj.player_id === player_id) + 1);
-            }
+              if (metadata?.position === "K") {
+                rookie_pick =
+                  "R" +
+                  (kickers.findIndex((obj) => obj.player_id === player_id) + 1);
+              }
 
-            draft_picks_all.push({
-              draftDraftId: draft_id,
-              pick_no,
-              player_id: rookie_pick || player_id,
-              roster_id,
-              picked_by,
-              league_type,
-              leagueLeagueId,
+              draft_picks_all.push({
+                draftDraftId: draft_id,
+                pick_no,
+                player_id: rookie_pick || player_id,
+                roster_id,
+                picked_by,
+                league_type,
+                leagueLeagueId,
+              });
             });
-          });
+          }
+        } catch (err) {
+          console.log(err.message);
         }
       })
     );
   }
 
   return draft_picks_all;
+};
+
+const getAuctionPicks = async (auctions_complete) => {
+  const auction_picks_all = [];
+
+  const batchSize = 5;
+
+  for (let i = 0; i < auctions_complete.length; i += batchSize) {
+    await Promise.all(
+      auctions_complete
+        .slice(i, i + batchSize)
+        .map(async (auction_complete) => {
+          try {
+            const auction_picks_auction = await fetchDraftPicks(
+              auction_complete.draft_id
+            );
+
+            if (
+              auction_picks_auction.find(
+                (pick) => pick.metadata?.years_exp === "0"
+              ) &&
+              !auction_picks_auction.find(
+                (pick) => pick.metadata?.position === "K"
+              )
+            ) {
+              const rookies = auction_picks_auction
+                .filter((pick) => pick?.metadata?.years_exp === "0")
+                .sort(
+                  (a, b) =>
+                    parseInt(b.metadata.amount || 0) -
+                    parseInt(a.metadata.amount || 0)
+                );
+
+              auction_picks_auction.forEach((auction_pick) => {
+                const { draft_id, player_id, roster_id, picked_by, metadata } =
+                  auction_pick;
+
+                const leagueLeagueId = auction_complete.league_id;
+
+                const league_type = auction_complete.league_type;
+
+                let rookie_pick;
+
+                if (metadata?.years_exp === "0") {
+                  rookie_pick =
+                    "R" +
+                    (rookies.findIndex((obj) => obj.player_id === player_id) +
+                      1);
+                }
+
+                const budget_percent = Math.round(
+                  (parseInt(metadata.amount) /
+                    auction_complete.settings.budget) *
+                    100
+                );
+
+                auction_picks_all.push({
+                  draftDraftId: draft_id,
+                  budget_percent,
+                  player_id,
+                  roster_id,
+                  picked_by,
+                  league_type,
+                  leagueLeagueId,
+                });
+
+                if (rookie_pick?.startsWith("R")) {
+                  auction_picks_all.push({
+                    draftDraftId: draft_id,
+                    budget_percent,
+                    player_id: rookie_pick,
+                    roster_id,
+                    picked_by,
+                    league_type,
+                    leagueLeagueId,
+                  });
+                }
+              });
+            }
+          } catch (err) {
+            console.log(err.message);
+          }
+        })
+    );
+  }
+
+  return auction_picks_all;
 };
 
 exports.sync = async (app) => {
@@ -158,21 +305,46 @@ exports.sync = async (app) => {
 
   const increment = 500;
 
-  let counter = app.get("drafts_sync_counter")?.counter || 0;
+  let counter_drafts = app.get("drafts_sync_counter")?.counter || 0;
 
-  let cutoff = app.get("drafts_sync_counter")?.cutoff || cutoff_default;
+  let cutoff_drafts = app.get("drafts_sync_counter")?.cutoff || cutoff_default;
 
-  const drafts_data = await getActiveDrafts({ increment, counter, cutoff });
+  let counter_auctions = app.get("auctions_sync_counter")?.counter || 0;
+
+  let cutoff_auctions =
+    app.get("auctions_sync_counter")?.cutoff || cutoff_default;
+
+  const drafts_data = await getActiveDrafts({
+    increment,
+    counter: counter_drafts,
+    cutoff: cutoff_drafts,
+  });
 
   const draft_picks = await getDraftPicks(drafts_data.drafts_active);
+
+  const auctions_data = await getCompletedAuctions({
+    increment,
+    counter: counter_auctions,
+    cutoff: cutoff_auctions,
+  });
+
+  const auction_picks = await getAuctionPicks(auctions_data.auctions_complete);
 
   await Draftpick.bulkCreate(draft_picks, {
     updateOnDuplicate: ["player_id", "roster_id", "picked_by"],
   });
 
-  console.log({ counter });
+  await Auctionpick.bulkCreate(auction_picks, {
+    ignoreDuplicates: true,
+  });
 
-  console.log({ leagues_dbLength: drafts_data.leagues_dbLength });
+  console.log({ counter_drafts });
+
+  console.log({ drafts_length: drafts_data.leagues_dbLength });
+
+  console.log({ counter_auctions });
+
+  console.log({ auctions_length: auctions_data.auctions_complete_length });
 
   if (drafts_data.leagues_dbLength < increment) {
     app.set("drafts_sync_counter", {

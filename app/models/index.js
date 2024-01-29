@@ -27,6 +27,7 @@ db.leagues = require("./league.model.js")(sequelize, Sequelize);
 db.trades = require("./trade.model.js")(sequelize, Sequelize);
 db.drafts = require("./draft.model.js")(sequelize, Sequelize);
 db.draftpicks = require("./draftpick.model.js")(sequelize, Sequelize);
+db.auctionpicks = require("./auctionpick.model.js")(sequelize, Sequelize);
 
 db.users.belongsToMany(db.leagues, { through: { model: "userLeagues" } });
 db.leagues.belongsToMany(db.users, { through: { model: "userLeagues" } });
@@ -39,5 +40,8 @@ db.drafts.belongsTo(db.leagues);
 
 db.drafts.hasMany(db.draftpicks);
 db.draftpicks.belongsTo(db.drafts);
+
+db.drafts.hasMany(db.auctionpicks);
+db.auctionpicks.belongsTo(db.drafts);
 
 module.exports = db;
