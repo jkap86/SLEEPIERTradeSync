@@ -353,7 +353,19 @@ exports.sync = async (app) => {
     });
   } else {
     app.set("drafts_sync_counter", {
-      counter: counter + increment,
+      counter: counter_drafts + increment,
+      cutoff: cutoff,
+    });
+  }
+
+  if (auctions_data.auctions_complete_length < increment) {
+    app.set("auctions_sync_counter", {
+      counter: 0,
+      cutoff: new Date().getTime(),
+    });
+  } else {
+    app.set("auctions_sync_counter", {
+      counter: counter_auctions + increment,
       cutoff: cutoff,
     });
   }
