@@ -267,26 +267,28 @@ const getAuctionPicks = async (auctions_complete) => {
                   console.log({ budget_percent, metadata });
                 }
 
-                auction_picks_all.push({
-                  draftDraftId: draft_id,
-                  budget_percent,
-                  player_id,
-                  roster_id,
-                  picked_by,
-                  league_type,
-                  leagueLeagueId,
-                });
-
-                if (rookie_pick?.startsWith("R")) {
+                if (budget_percent !== NaN) {
                   auction_picks_all.push({
                     draftDraftId: draft_id,
                     budget_percent,
-                    player_id: rookie_pick,
+                    player_id,
                     roster_id,
                     picked_by,
                     league_type,
                     leagueLeagueId,
                   });
+
+                  if (rookie_pick?.startsWith("R")) {
+                    auction_picks_all.push({
+                      draftDraftId: draft_id,
+                      budget_percent,
+                      player_id: rookie_pick,
+                      roster_id,
+                      picked_by,
+                      league_type,
+                      leagueLeagueId,
+                    });
+                  }
                 }
               });
             }
