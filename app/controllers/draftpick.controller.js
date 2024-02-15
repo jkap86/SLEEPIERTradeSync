@@ -258,10 +258,14 @@ const getAuctionPicks = async (auctions_complete) => {
                 }
 
                 const budget_percent = Math.round(
-                  (parseInt(metadata.amount) /
+                  (parseInt(metadata?.amount || 0) /
                     auction_complete.settings.budget) *
                     100
                 );
+
+                if (!parseInt(budget_percent)) {
+                  console.log(budget_percent);
+                }
 
                 auction_picks_all.push({
                   draftDraftId: draft_id,
