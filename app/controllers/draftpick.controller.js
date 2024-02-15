@@ -263,8 +263,8 @@ const getAuctionPicks = async (auctions_complete) => {
                     100
                 );
 
-                if (!parseInt(budget_percent)) {
-                  console.log(budget_percent);
+                if (budget_percent === NaN) {
+                  console.log({ budget_percent, metadata });
                 }
 
                 auction_picks_all.push({
