@@ -293,7 +293,7 @@ const getAuctionPicks = async (auctions_complete) => {
     );
   }
 
-  return auction_picks_all;
+  return auction_picks_all.filter((x) => x);
 };
 
 exports.sync = async (app) => {
