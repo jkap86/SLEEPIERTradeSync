@@ -85,26 +85,12 @@ const getActiveDrafts = async ({ increment, counter, cutoff }) => {
             },
           },
         },
-        {
-          [Op.or]: [
-            {
-              settings: {
-                slots_k: 1,
-              },
-            },
-            {
-              settings: {
-                [Op.not]: 2,
-              },
-            },
-          ],
-        },
       ],
     },
   });
 
   console.log({
-    drafts_active_keys: Object.keys(drafts_active).length,
+    drafts_active_length: drafts_active.length,
   });
 
   return {
@@ -262,10 +248,6 @@ const getAuctionPicks = async (auctions_complete) => {
                     auction_complete.settings.budget) *
                     100
                 );
-
-                if (!parseInt(budget_percent)) {
-                  console.log({ budget_percent, metadata });
-                }
 
                 if (parseInt(budget_percent)) {
                   auction_picks_all.push({
