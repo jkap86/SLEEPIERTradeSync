@@ -62,7 +62,9 @@ const getTrades = async ({ leagues, week_to_fetch }) => {
           .filter((t) => t.type === "trade")
           .map((transaction) => {
             const draft_order = league.drafts.find(
-              (d) => d.draft_order && d.status !== "complete"
+              (d) =>
+                d.draft_order &&
+                d.settings.rounds === league.settings.draft_rounds
             )?.draft_order;
 
             const managers = transaction.roster_ids.map((roster_id) => {
@@ -186,7 +188,7 @@ const getTrades = async ({ leagues, week_to_fetch }) => {
 
 const getLeagues = async ({ increment, counter }) => {
   const leagues_db = await League.findAll({
-    attributes: ["league_id", "rosters", "createdAt"],
+    attributes: ["league_id", "settings", "rosters", "createdAt"],
     where: {
       settings: {
         disable_trades: 0,
