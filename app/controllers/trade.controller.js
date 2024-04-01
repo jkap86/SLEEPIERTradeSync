@@ -61,11 +61,11 @@ const getTrades = async ({ leagues, week_to_fetch }) => {
         return transactions_league.data
           .filter((t) => t.type === "trade")
           .map((transaction) => {
-            const draft_w_order = league.drafts.find(
+            const draft_order = league.drafts.find(
               (d) =>
                 d.draft_order &&
                 d.settings.rounds === league.settings.draft_rounds
-            );
+            )?.draft_order;
 
             const managers = transaction.roster_ids.map((roster_id) => {
               const user = league.rosters?.find(
@@ -103,10 +103,7 @@ const getTrades = async ({ leagues, week_to_fetch }) => {
                   username: old_roster?.username,
                   avatar: old_roster?.avatar,
                 },
-                order:
-                  draft_w_order && draft_w_order.season === pick.season
-                    ? draft_w_order.draft_order[roster?.user_id]
-                    : null,
+                order: draft_order ? draft_order[roster?.user_id] : null,
               };
             });
 
