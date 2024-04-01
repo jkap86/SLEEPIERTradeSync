@@ -105,7 +105,7 @@ const getTrades = async ({ leagues, week_to_fetch }) => {
                 },
                 order:
                   draft_w_order && draft_w_order.season === pick.season
-                    ? draft_w_order[roster?.user_id]
+                    ? draft_w_order.draft_order[roster?.user_id]
                     : null,
               };
             });
